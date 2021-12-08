@@ -62,6 +62,11 @@ namespace MainApplication {
 	};
 
 	bool Game::OnUserUpdate(float delta) {
+		if(entRefreshTimer.getSeconds() > 30){
+			Entity::optimizeEntities(); // clear out invalid entities
+			entRefreshTimer.restart();
+		}
+
 		Clear(olc::BLANK);
 
 		drawGrid();

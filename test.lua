@@ -17,7 +17,7 @@ function check_position(me, x, y)
     for k, entity in pairs(entity_table) do
         if me.id == entity.id then goto continue; end
 
-        local obj = find_unit(entity.id);
+        local obj = find_entity(entity.id);
         if obj == nil then goto continue; end
 
         if (entity.tx == x and entity.ty == y) or (entity.fx == x and entity.fy == y) then
@@ -48,7 +48,7 @@ function unit_loop(obj, delta)
     end
     
     if self.instruction == nil then
-        self.instruction = get_instruction(obj);
+        self.instruction = get_unit_instruction(obj);
         if self.instruction ~= nil then
             self.instruction.used = false;
         end
@@ -107,18 +107,18 @@ function unit_loop(obj, delta)
         self.position.y = math.max(math.min(ScreenHeight(), self.position.y), 0);
     end
 
-    move_unit(obj, self.position.x, self.position.y);
+    move_entity(obj, self.position.x, self.position.y);
     --move_debug_point(self.dbg_point, self.fx, self.fy);
     
     if self.life < 0 then
-        destroy_unit(obj);
+        destroy_entity(obj);
     end
 end
 
 
 function add_unit(controller, xx, yy, color)
-    local u = spawn_unit(controller, math.floor(xx / 32) * 32, math.floor(yy / 32) * 32); -- align to grid
-    set_entity_color(u, color);
+    local u = new_unit(controller, math.floor(xx / 32) * 32, math.floor(yy / 32) * 32); -- align to grid
+    set_unit_color(u, color);
 end
 
 
@@ -126,6 +126,10 @@ end
 
 function setup()
     print("Initialize...\n");
+    
+    cnv = canvas.new(128, 128, 0xFFFFFFFF);
+    cnv.visible = true;
+    move_entity(cnv.entity, 64, 64);
     
     ai = list_ai();
     for k,v in pairs(ai) do
@@ -141,8 +145,14 @@ end
 clock = 0;
 function loop(delta)
     game_timer = game_timer + delta;
+
+    cnv:set(
+        math.floor(math.random() * cnv.width),
+        math.floor(math.random() * cnv.height),
+        0xFF000000);
     
-    if game_timer - clock > 15 then
+    if game_timer - clock > 5 then
+        destroy_entity(cnv.entity);
         add_unit(ai[0].controller, math.random() * ScreenWidth(), math.random() * ScreenHeight(), 0xFFFFFFFF);
         clock = game_timer;
     end

@@ -9,10 +9,10 @@ dir[3] = "d";
 
 function check_surroundings(self)
     data = {};
-    data["right"] = query_unit(self.position.x + 32, self.position.y);
-    data["up"] = query_unit(self.position.x, self.position.y - 32);
-    data["left"] = query_unit(self.position.x - 32, self.position.y);
-    data["down"] = query_unit(self.position.x, self.position.y + 32);
+    data["right"] = check_pos(self.position.x + 32, self.position.y);
+    data["up"] = check_pos(self.position.x, self.position.y - 32);
+    data["left"] = check_pos(self.position.x - 32, self.position.y);
+    data["down"] = check_pos(self.position.x, self.position.y + 32);
     return data;
 end
 
@@ -21,7 +21,7 @@ game_timer = 0;
 clock = 0;
 function unit_loop(self, delta)
     game_timer = game_timer + delta;
-    self = get_entity_data(self);
+    self = get_data(self);
 
     if (math.random() * 100) > 99 then
         move(self.entity, dir[math.floor(math.random() * 4)]);

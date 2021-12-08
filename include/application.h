@@ -4,6 +4,7 @@
 #include <limits>
 #include "sol/sol.hpp"
 #include "ai_controller.h"
+#include "clock.h"
 #include <iostream>
 #include <vector>
 
@@ -19,6 +20,7 @@ namespace MainApplication {
 		virtual ~Game();
 	public:
 		std::vector<AIController*> controllers;
+		Clock entRefreshTimer;
 
 		bool OnUserCreate();
 		

@@ -3,14 +3,27 @@
 size_t Entity::counter = 0;
 std::vector<std::shared_ptr<Entity>> Entity::entities;
 
+// Entity Static Methods
+
 void Entity::initEntitySystem() {
     entities.reserve(5096);
     counter = 0;
 }
 
-void Entity::clearEntities() {
+void Entity::clearEntities(bool destroy) {
+    if(destroy) for(std::shared_ptr<Entity>& e : entities) e.reset();
     entities.clear();
     initEntitySystem();
+}
+
+void Entity::optimizeEntities() {
+    std::vector<std::shared_ptr<Entity>> _entities(std::move(entities));
+    entities.clear();
+    entities.reserve(5096);
+
+    for(std::shared_ptr<Entity>& p : _entities){
+        if(p) entities.emplace_back(std::move(p));
+    }
 }
 
 void Entity::destroyEntity(std::shared_ptr<Entity> entity) {
@@ -22,6 +35,7 @@ std::shared_ptr<Entity> Entity::pointCheckCollision(float x, float y) {
     olc::vf2d point = {x, y};
 
     for(std::shared_ptr<Entity> e : entities){
+        if(!e) continue;
         olc::vf2d other_topleft = e->position + e->collisionBox.offset,
               other_bottomright = other_topleft + e->collisionBox.size;
 
@@ -44,7 +58,9 @@ std::shared_ptr<Entity> Entity::findEntity(size_t id) {
     return *it;
 }
 
-Entity::Entity(): position({0,0}), color(0xFFFFFFFF), collisionBox({{-16, -16}, {32, 32}}) {
+// Entity Methods
+
+Entity::Entity(): position({0,0}), collisionBox({{-16, -16}, {32, 32}}) {
     id = counter++;
 }
 
@@ -70,8 +86,6 @@ size_t Entity::checkCollision(std::vector<std::weak_ptr<Entity>>& list) {
     return list.size();
 }
 
-void Entity::draw() {
-    pge->FillRect(position + collisionBox.offset, collisionBox.size, color);
-}
+void Entity::draw() { }
 
 void Entity::update(float delta) {}

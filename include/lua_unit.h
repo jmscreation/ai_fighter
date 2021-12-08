@@ -18,10 +18,12 @@ class Unit : public Entity {
     sol::function updateFunction, mainUpdateFunction;
 
     size_t maxInstructions;
-    std::queue<Instruction> instructions;
+    std::queue<Instruction> instructions;    
 
 public:
     static std::shared_ptr<Entity> createUnit(sol::state& lua, float x, float y);
+
+    uint32_t color;
 
     Unit(sol::state& lua);
     virtual ~Unit();

@@ -35,7 +35,7 @@ std::shared_ptr<Entity> Unit::createUnit(sol::state& lua, float x, float y) {
 }
 
 void Unit::draw() {
-    Entity::draw();
+    pge->FillRect(position + collisionBox.offset, collisionBox.size, color);
 }
 
 void Unit::update(float delta) {

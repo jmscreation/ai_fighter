@@ -1,5 +1,6 @@
 #include "lua_bindings.h"
 #include "lua_unit.h"
+#include "lua_canvas.h"
 #include "debug_point.h"
 
 namespace LuaBindings {
@@ -43,7 +44,25 @@ namespace LuaBindings {
         sol::usertype<olc::vf2d> vector_type = lua.new_usertype<olc::vf2d>("vector", sol::constructors<olc::vf2d(), olc::vf2d(float x, float y)>());
         vector_type["x"] = &olc::vf2d::x;
         vector_type["y"] = &olc::vf2d::y;
-        
+
+        sol::usertype<CanvasProxy> canvas_type = lua.new_usertype<CanvasProxy>("canvas", sol::constructors<CanvasProxy(uint32_t x, uint32_t y), CanvasProxy(uint32_t x, uint32_t y, uint32_t color)>());
+        canvas_type["set"] = [&](CanvasProxy& c, uint32_t x, uint32_t y, uint32_t color){
+            if(c.canvas) c.canvas->set(x, y, color);
+        };
+        canvas_type["get"] = [&](CanvasProxy& c, uint32_t x, uint32_t y){
+            if(!c.canvas) return sol::object(sol::nil);
+            return sol::make_object(lua, c.canvas->get(x, y));
+        };
+        canvas_type["visible"] = sol::property(
+                        [&](CanvasProxy& c, bool b){ if(c.canvas) c.canvas->visible = b; },
+                        [&](CanvasProxy& c){ return c.canvas ? sol::make_object(lua, c.canvas->visible) : sol::object(sol::nil); });
+        canvas_type["entity"] = sol::readonly_property(
+                        [&](CanvasProxy& c){ return c.canvas ? sol::make_object_userdata(lua, std::static_pointer_cast<Entity>(c.canvas)) : sol::object(sol::nil); });
+        canvas_type["width"] = sol::readonly_property(
+                        [&](CanvasProxy& c){ return c.canvas ? sol::make_object(lua, c.canvas->width) : sol::object(sol::nil); });
+        canvas_type["height"] = sol::readonly_property(
+                        [&](CanvasProxy& c){ return c.canvas ? sol::make_object(lua, c.canvas->height) : sol::object(sol::nil); });
+
         // Bindings
 
         lua["ScreenWidth"] = [&](){ return pge.ScreenWidth(); };
@@ -71,25 +90,16 @@ namespace LuaBindings {
             return list;
         };
 
-        lua["spawn_unit"] = [&](sol::object controller, float x, float y){
-            AIController* cont = controller.as<AIController*>();
-            if(cont == nullptr) return sol::object(sol::nil);
+        // Core Entity Bindings
 
-            std::shared_ptr<Entity> unit = Unit::createUnit(cont->lua, x, y);
-
-            return sol::make_object_userdata(lua, unit);
-        };
-
-        lua["find_unit"] = [&](size_t id) {
-            auto e = Entity::findEntity(id);
+        lua["find_entity"] = [&](size_t id) {
+            std::shared_ptr<Entity> e = Entity::findEntity(id);
             if(!e) return sol::object(sol::nil);
 
             return sol::make_object_userdata(lua, e);
         };
 
-        // Entity / Unit Bindings
-
-        lua["move_unit"] = [&](sol::object entity, float x, float y) {
+        lua["move_entity"] = [&](sol::object entity, float x, float y) {
             std::shared_ptr<Entity> e = entity.as<std::shared_ptr<Entity>>();
             if(e){
                 e->position.x = x;
@@ -98,14 +108,14 @@ namespace LuaBindings {
         };
 
 
-        lua["destroy_unit"] = [&](sol::object entity) {
+        lua["destroy_entity"] = [&](sol::object entity) {
             std::shared_ptr<Entity> e = entity.as<std::shared_ptr<Entity>>();
             if(e){
                 Entity::destroyEntity(e);
             }
         };
 
-        lua["check_unit_collision"] = [&](sol::object entity) {
+        lua["check_entity_collision"] = [&](sol::object entity) {
             std::shared_ptr<Entity> e = entity.as<std::shared_ptr<Entity>>();
             if(!e) return sol::object(sol::nil);
 
@@ -128,27 +138,41 @@ namespace LuaBindings {
             data["entity"] = e;
             data["id"] = e->getId();
             data["position"] = e->position;
-            data["color"] = e->color;
             data["collisionBox"]["offset"] = e->collisionBox.offset;
             data["collisionBox"]["size"] = e->collisionBox.size;
 
             return data.as<sol::object>();
         };
 
-        lua["set_entity_color"] = [&](sol::object entity, uint32_t color) {
-            std::shared_ptr<Entity> e = entity.as<std::shared_ptr<Entity>>();
+        // Unit Bindings
+
+        lua["new_unit"] = [&](sol::object controller, float x, float y){
+            AIController* cont = controller.as<AIController*>();
+            if(cont == nullptr) return sol::object(sol::nil);
+
+            std::shared_ptr<Entity> unit = Unit::createUnit(cont->lua, x, y);
+
+            return sol::make_object_userdata(lua, unit);
+        };
+
+        lua["set_unit_color"] = [&](sol::object entity, uint32_t color) {
+            std::shared_ptr<Unit> e = std::dynamic_pointer_cast<Unit>(entity.as<std::shared_ptr<Entity>>());
             if(e){
                 e->color = color;
             }
         };
 
-        lua["get_instruction"] = [&](sol::object entity){
-            std::shared_ptr<Entity> e = entity.as<std::shared_ptr<Entity>>();
+        lua["get_unit_color"] = [&](sol::object entity) {
+            std::shared_ptr<Unit> e = std::dynamic_pointer_cast<Unit>(entity.as<std::shared_ptr<Entity>>());
             if(!e) return sol::object(sol::nil);
-            std::shared_ptr<Unit> u = std::dynamic_pointer_cast<Unit>(e);
-            if(!u) return sol::object(sol::nil);
+            return sol::make_object(lua, e->color);
+        };
 
-            Instruction ii = u->popInstruction();
+        lua["get_unit_instruction"] = [&](sol::object entity){
+            std::shared_ptr<Unit> e = std::dynamic_pointer_cast<Unit>(entity.as<std::shared_ptr<Entity>>());
+            if(!e) return sol::object(sol::nil);
+
+            Instruction ii = e->popInstruction();
             if(!ii.valid()) return sol::object(sol::nil);
 
             return lua.create_table_with("type", ii.type, "direction", ii.direction).as<sol::object>();
@@ -179,21 +203,20 @@ namespace LuaBindings {
             return entity;
         };
 
-        lua["query_unit"] = [&](float x, float y){
+        lua["check_pos"] = [&](float x, float y){
             std::shared_ptr<Entity> e = Entity::pointCheckCollision(x, y);
             if(!e) return sol::object(sol::nil);
             sol::table data = lua.create_table_with("collisionBox", lua.create_table());
 
             data["id"] = e->getId();
             data["position"] = e->position;
-            data["color"] = e->color;
             data["collisionBox"]["offset"] = e->collisionBox.offset;
             data["collisionBox"]["size"] = e->collisionBox.size;
 
             return data.as<sol::object>();
         };
 
-        lua["get_entity_data"] = [&](sol::object entity) {
+        lua["get_data"] = [&](sol::object entity) {
             std::shared_ptr<Entity> e = entity.as<std::shared_ptr<Entity>>();
             if(!e) return sol::object(sol::nil);
 
@@ -201,7 +224,6 @@ namespace LuaBindings {
 
             data["entity"] = e;
             data["id"] = e->getId();
-            data["color"] = e->color;
             data["position"] = e->position;
             data["collisionBox"]["offset"] = e->collisionBox.offset;
             data["collisionBox"]["size"] = e->collisionBox.size;

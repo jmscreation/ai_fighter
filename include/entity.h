@@ -16,7 +16,6 @@ protected:
     Entity();
 public:
     olc::vf2d position; // cartesian point in space
-    uint32_t color;
 
     struct {
         olc::vf2d offset; // offset from position
@@ -35,7 +34,8 @@ public:
 
 public: // static methods
     static void initEntitySystem();
-    static void clearEntities();
+    static void optimizeEntities();
+    static void clearEntities(bool destroy=true);
     static void destroyEntity(std::shared_ptr<Entity> e);
     static std::shared_ptr<Entity> pointCheckCollision(float x, float y);
     static std::shared_ptr<Entity> findEntity(size_t id);
