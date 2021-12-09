@@ -123,13 +123,15 @@ end
 
 
 -- main setup function
+cent = nil;
 
 function setup()
     print("Initialize...\n");
-    
-    cnv = canvas.new(128, 128, 0xFFFFFFFF);
-    cnv.visible = true;
-    move_entity(cnv.entity, 64, 64);
+
+    local canvas = Canvas.new(128, 128, 0xFFFFFFFF);
+    cent = CanvasEntity.new(canvas);
+
+    move_entity(cent.entity, 64, 64);
     
     ai = list_ai();
     for k,v in pairs(ai) do
@@ -145,14 +147,13 @@ end
 clock = 0;
 function loop(delta)
     game_timer = game_timer + delta;
-
-    cnv:set(
-        math.floor(math.random() * cnv.width),
-        math.floor(math.random() * cnv.height),
+    cent.canvas:set(
+        math.floor(math.random() * cent.canvas.width),
+        math.floor(math.random() * cent.canvas.height),
         0xFF000000);
     
     if game_timer - clock > 5 then
-        destroy_entity(cnv.entity);
+        cent = nil;
         add_unit(ai[0].controller, math.random() * ScreenWidth(), math.random() * ScreenHeight(), 0xFFFFFFFF);
         clock = game_timer;
     end

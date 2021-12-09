@@ -1,6 +1,7 @@
 #include "lua_bindings.h"
 #include "lua_unit.h"
 #include "lua_canvas.h"
+#include "lua_canvas_entity.h"
 #include "debug_point.h"
 
 namespace LuaBindings {
@@ -45,23 +46,44 @@ namespace LuaBindings {
         vector_type["x"] = &olc::vf2d::x;
         vector_type["y"] = &olc::vf2d::y;
 
-        sol::usertype<CanvasProxy> canvas_type = lua.new_usertype<CanvasProxy>("canvas", sol::constructors<CanvasProxy(uint32_t x, uint32_t y), CanvasProxy(uint32_t x, uint32_t y, uint32_t color)>());
+
+        sol::usertype<CanvasProxy> canvas_type = lua.new_usertype<CanvasProxy>("Canvas", sol::constructors<CanvasProxy(uint32_t x, uint32_t y), CanvasProxy(uint32_t x, uint32_t y, uint32_t color)>());
         canvas_type["set"] = [&](CanvasProxy& c, uint32_t x, uint32_t y, uint32_t color){
             if(c.canvas) c.canvas->set(x, y, color);
         };
+        canvas_type["fill"] = sol::overload(
+            [&](CanvasProxy& c, uint32_t color){
+                if(c.canvas) c.canvas->fill(color);
+            },
+            [&](CanvasProxy& c, uint32_t color, uint32_t x, uint32_t y){
+                if(c.canvas) c.canvas->fill(color, x, y);
+            },
+            [&](CanvasProxy& c, uint32_t color, uint32_t x, uint32_t y, uint32_t width, uint32_t height){
+                if(c.canvas) c.canvas->fill(color, x, y, width, height);
+            }
+        );
         canvas_type["get"] = [&](CanvasProxy& c, uint32_t x, uint32_t y){
             if(!c.canvas) return sol::object(sol::nil);
             return sol::make_object(lua, c.canvas->get(x, y));
         };
-        canvas_type["visible"] = sol::property(
-                        [&](CanvasProxy& c, bool b){ if(c.canvas) c.canvas->visible = b; },
-                        [&](CanvasProxy& c){ return c.canvas ? sol::make_object(lua, c.canvas->visible) : sol::object(sol::nil); });
-        canvas_type["entity"] = sol::readonly_property(
-                        [&](CanvasProxy& c){ return c.canvas ? sol::make_object_userdata(lua, std::static_pointer_cast<Entity>(c.canvas)) : sol::object(sol::nil); });
         canvas_type["width"] = sol::readonly_property(
                         [&](CanvasProxy& c){ return c.canvas ? sol::make_object(lua, c.canvas->width) : sol::object(sol::nil); });
         canvas_type["height"] = sol::readonly_property(
                         [&](CanvasProxy& c){ return c.canvas ? sol::make_object(lua, c.canvas->height) : sol::object(sol::nil); });
+
+
+        sol::usertype<CanvasEntityProxy> canvas_entity_type = lua.new_usertype<CanvasEntityProxy>("CanvasEntity", sol::constructors<CanvasEntityProxy(const CanvasProxy& cnv), CanvasEntityProxy(float x, float y, const CanvasProxy& cnv), CanvasEntityProxy(float x, float y), CanvasEntityProxy()>());
+        canvas_entity_type["visible"] = sol::property(
+                        [&](CanvasEntityProxy& c, bool b){ if(c.entity) c.entity->visible = b; },
+                        [&](CanvasEntityProxy& c){ return c.entity ? sol::make_object(lua, c.entity->visible) : sol::object(sol::nil); });
+        canvas_entity_type["entity"] = sol::readonly_property(
+                        [&](CanvasEntityProxy& c){ return c.entity ? sol::make_object_userdata(lua, std::static_pointer_cast<Entity>(c.entity)) : sol::object(sol::nil); });
+
+        canvas_entity_type["canvas"] = sol::property(
+                        [&](CanvasEntityProxy& c, CanvasProxy& e){
+                            if(e.canvas && c.entity) c.entity->set(e.canvas);
+                        },
+                        [&](CanvasEntityProxy& c){ return c.entity ? sol::make_object(lua, CanvasProxy(std::move(c.entity->get()))) : sol::object(sol::nil); });
 
         // Bindings
 
