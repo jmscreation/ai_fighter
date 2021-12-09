@@ -96,7 +96,7 @@ function unit_loop(obj, delta)
         self.fy = self.ty;
         self.instruction = nil;
     end
-    
+
     self.position.x = self.position.x + vx * delta;
     self.position.y = self.position.y + vy * delta;
     
@@ -125,6 +125,8 @@ end
 -- main setup function
 cents = {};
 
+closure = nil;
+
 function setup()
     print("Initialize...\n");
 
@@ -134,6 +136,16 @@ function setup()
     
     cents[0] = CanvasEntity.new(canvas);
     cents[1] = CanvasEntity.new(200, 64, canvas);
+
+    local test = CanvasEntity.new(Canvas.new(500, 500, 0xFFAB000F));
+    test.x = 64;
+    test.y = 64;
+
+    closure = function ()
+        test.x = 0;
+        test.y = 1;
+        test.canvas = cents[1].canvas;
+    end
 
     move_entity(cents[0].entity, 64, 64);
     
@@ -161,7 +173,14 @@ function loop(delta)
     end
 
     if game_timer - clock > 5 then
+        if cents[0] == nil then
+            closure = nil;
+        else
+            closure();
+        end
         cents[0] = nil;
+        cents[1].visible = not cents[1].visible;
+
         add_unit(ai[0].controller, math.random() * ScreenWidth(), math.random() * ScreenHeight(), 0xFFFFFFFF);
         clock = game_timer;
     end

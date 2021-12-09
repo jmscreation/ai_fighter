@@ -15,7 +15,7 @@ Canvas::~Canvas() {
 
 std::shared_ptr<Canvas> Canvas::create_canvas(uint32_t width, uint32_t height, uint32_t color) {
     std::shared_ptr<Canvas> canvas = std::make_shared<Canvas>(width, height, color);
-    //Entity::entities.push_back(canvas->getPointer()); // add to a managed life list
+
     return canvas;
 }
 

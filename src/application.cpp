@@ -34,10 +34,6 @@ namespace MainApplication {
 		DebugPoint::pge = this; // give debugger pge access
 		Entity::initEntitySystem();
 		LuaBindings::InitGame(*this);
-		lua.set_panic( [](lua_State* state) -> int {
-			std::cout << "Lua exception\n";
-			return 0;
-		});
 		
 		scripts.loadScript("ai.lua");
 		if(!scripts.loadScript("test.lua")) return false;

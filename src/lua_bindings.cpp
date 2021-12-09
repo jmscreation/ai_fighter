@@ -76,6 +76,12 @@ namespace LuaBindings {
         canvas_entity_type["visible"] = sol::property(
                         [&](CanvasEntityProxy& c, bool b){ if(c.entity) c.entity->visible = b; },
                         [&](CanvasEntityProxy& c){ return c.entity ? sol::make_object(lua, c.entity->visible) : sol::object(sol::nil); });
+        canvas_entity_type["x"] = sol::property(
+                        [&](CanvasEntityProxy& c, float x){ if(c.entity) c.entity->position.x = x; },
+                        [&](CanvasEntityProxy& c){ return c.entity ? sol::make_object(lua, c.entity->position.x) : sol::object(sol::nil); });
+        canvas_entity_type["y"] = sol::property(
+                        [&](CanvasEntityProxy& c, float y){ if(c.entity) c.entity->position.y = y; },
+                        [&](CanvasEntityProxy& c){ return c.entity ? sol::make_object(lua, c.entity->position.y) : sol::object(sol::nil); });
         canvas_entity_type["entity"] = sol::readonly_property(
                         [&](CanvasEntityProxy& c){ return c.entity ? sol::make_object_userdata(lua, std::static_pointer_cast<Entity>(c.entity)) : sol::object(sol::nil); });
 
