@@ -30,7 +30,7 @@ namespace LuaBindings {
     }
 
     void InitGame(MainApplication::Game& pge) {
-        sol::state& lua = MainApplication::lua;
+        sol::state& lua = pge.lua;
 
         lua["cout"] = [](sol::object value){
             if(value.get_type() == sol::type::table){

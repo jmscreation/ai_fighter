@@ -13,7 +13,7 @@ CanvasEntity::~CanvasEntity() {
 std::shared_ptr<CanvasEntity> CanvasEntity::create_entity(float x, float y, const std::shared_ptr<Canvas>& cnv) {
     std::shared_ptr<CanvasEntity> entity = std::make_shared<CanvasEntity>(x, y);
     if(cnv) entity->set(cnv);
-    Entity::entities.emplace_back(entity);
+    Entity::entities.push_back(entity);
     return entity;
 }
 

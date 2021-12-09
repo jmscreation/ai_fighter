@@ -9,8 +9,6 @@
 #include <vector>
 
 namespace MainApplication {
-    extern sol::state lua;
-
     class Game : public olc::PixelGameEngine {
 
 		void drawGrid();
@@ -19,6 +17,9 @@ namespace MainApplication {
 		Game(uint32_t w, uint32_t h, uint32_t px = 1, uint32_t py = 1);
 		virtual ~Game();
 	public:
+		static sol::state* _lua;
+		sol::state& lua;
+
 		std::vector<AIController*> controllers;
 		Clock entRefreshTimer;
 

@@ -5,11 +5,14 @@
 #include "debug_point.h"
 
 namespace MainApplication {
-	sol::state lua;
 	ScriptLoader scripts;
 	sol::function mainsetup, mainloop;
+	
+	sol::state* Game::_lua = nullptr;
 
-	Game::Game(uint32_t w, uint32_t h, uint32_t px, uint32_t py) {
+	Game::Game(uint32_t w, uint32_t h, uint32_t px, uint32_t py): lua(*(new sol::state)) {
+		_lua = &lua;
+
 		sAppName = "Application Name";
 
 		lua.open_libraries(sol::lib::base);
@@ -21,7 +24,9 @@ namespace MainApplication {
 	}
 
 	Game::~Game() {
-		for(AIController* p : controllers) delete p;
+		for(AIController* p : controllers){
+			delete p;
+		}
 		controllers.clear();
 	}
 
@@ -29,6 +34,10 @@ namespace MainApplication {
 		DebugPoint::pge = this; // give debugger pge access
 		Entity::initEntitySystem();
 		LuaBindings::InitGame(*this);
+		lua.set_panic( [](lua_State* state) -> int {
+			std::cout << "Lua exception\n";
+			return 0;
+		});
 		
 		scripts.loadScript("ai.lua");
 		if(!scripts.loadScript("test.lua")) return false;
@@ -109,6 +118,9 @@ namespace MainApplication {
 
 
 int main(){
-	MainApplication::Game app(400, 400);
+	{
+		MainApplication::Game app(400, 400);
+	}
+
 	return 0;
 }

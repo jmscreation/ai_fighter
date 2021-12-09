@@ -3,7 +3,7 @@
 Unit::Unit(sol::state& lua): lua(lua) {
     maxInstructions = 10;
     updateFunction = lua["unit_loop"];
-    mainUpdateFunction = MainApplication::lua["unit_loop"];
+    mainUpdateFunction = (*MainApplication::Game::_lua)["unit_loop"];
 }
 
 Unit::~Unit() {
