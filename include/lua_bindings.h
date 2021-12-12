@@ -7,7 +7,7 @@ namespace LuaBindings {
 
     extern sol::object CopyObject(sol::object value, sol::state& lua);
 
-    extern void InitGame(MainApplication::Game& pge);
-    extern void InitAI(AIController& controller, olc::PixelGameEngine& pge);
+    extern void InitGame(MainApplication::Game& game);
+    extern void InitAI(AIController& controller, MainApplication::Game& game);
 
 }

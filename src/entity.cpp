@@ -66,26 +66,4 @@ Entity::Entity(): position({0,0}), collisionBox({{-16, -16}, {32, 32}}) {
 
 Entity::~Entity() {}
 
-size_t Entity::checkCollision(std::vector<std::weak_ptr<Entity>>& list) {
-    list.clear(); // clear list for fresh list of collision checks
-    olc::vf2d topleft = position + collisionBox.offset,
-              bottomright = topleft + collisionBox.size;
-
-    for(std::shared_ptr<Entity> e : entities){
-        if(!e || e.get() == this) continue;
-        olc::vf2d other_topleft = e->position + e->collisionBox.offset,
-              other_bottomright = other_topleft + e->collisionBox.size;
-
-        if(other_topleft.x < bottomright.x && other_bottomright.x > topleft.x &&
-           other_topleft.y < bottomright.y && other_bottomright.y > topleft.y){ // intersects
-            list.push_back(e);
-        }
-
-    }
-
-    return list.size();
-}
-
 void Entity::draw() { }
-
-void Entity::update(float delta) {}

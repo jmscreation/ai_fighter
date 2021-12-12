@@ -11,7 +11,7 @@ set CPP=c++
 set GPP=g++
 set GCC=gcc
 set OUTPUT=program.exe
-set DEBUGMODE=0
+set DEBUGMODE=1
 set COMMANDLINE=1
 
 set LINK_ONLY=0

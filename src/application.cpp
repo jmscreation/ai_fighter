@@ -12,35 +12,31 @@ namespace MainApplication {
 
 	Game::Game(uint32_t w, uint32_t h, uint32_t px, uint32_t py): lua(*(new sol::state)) {
 		_lua = &lua;
+		window = nullptr;
 
-		sAppName = "Application Name";
+		screen_w = w;
+		screen_h = h;
+		this->px = px;
+		this->py = py;
+		this->vsync = vsync;
+		this->fullscreen = fullscreen;
+		windowChanged = true;
 
 		lua.open_libraries(sol::lib::base);
 		lua.open_libraries(sol::lib::math);
 		lua.open_libraries(sol::lib::package);
 		lua.open_libraries(sol::lib::string);
-		
-		if(Construct(w, h, px, py)){
-			Start();
-		}
-	}
 
-	Game::~Game() {
-		for(AIController* p : controllers){
-			delete p;
-		}
-		controllers.clear();
-	}
-
-	bool Game::OnUserCreate() {
-		DebugPoint::pge = this; // give debugger pge access
 		Entity::initEntitySystem();
 		LuaBindings::InitGame(*this);
 		
 		scripts.loadScript("ai.lua");
-		if(!scripts.loadScript("test.lua")) return false;
+		if(!scripts.loadScript("game.lua")){
+			std::cout << "Failed to load \"game.lua\" game script\n";
+			return;
+		}
 
-		lua.safe_script(scripts.getScript("test.lua"), [](lua_State*, sol::protected_function_result pfr){
+		lua.safe_script(scripts.getScript("game.lua"), [](lua_State*, sol::protected_function_result pfr){
 			sol::error e = pfr;
 			std::cout << "error: " << e.what() << "\n";
 			return pfr;
@@ -68,31 +64,61 @@ namespace MainApplication {
 		for(AIController* cont : controllers){
 			cont->lua["setup"](); // run ai setup
 		}
+		
+		while(OpenWindow());
+	}
 
-		return true;
-	};
+	Game::~Game() {
+		for(AIController* p : controllers){
+			delete p;
+		}
+		controllers.clear();
+	}
 
-	bool Game::OnUserUpdate(float delta) {
+	bool Game::OpenWindow() {
+		if(!windowChanged) return false;
+		windowChanged = false;
+		window = new Window(std::bind(&Game::OnUserUpdate, this, std::placeholders::_1, std::placeholders::_2),
+							screen_w, screen_h, px, py, fullscreen, vsync);
+		delete window;
+		window = nullptr;
+
+		return windowChanged;
+	}
+
+	void Game::SetWindowSize(int w, int h) {
+		screen_w = w;
+		screen_h = h;
+		windowChanged = true;
+	}
+
+	void Game::SetWindowFullscreen(bool bFullscreen) {
+		fullscreen = bFullscreen;
+		windowChanged = true;
+	}
+
+	void Game::SetWindowVsync(bool bVsync) {
+		vsync = bVsync;
+		windowChanged = true;
+	}
+
+	bool Game::OnUserUpdate(Window* pge, float delta) {
 		if(entRefreshTimer.getSeconds() > 30){
 			Entity::optimizeEntities(); // clear out invalid entities
 			entRefreshTimer.restart();
 		}
 
-		Clear(olc::BLANK);
-
-		drawGrid();
+		pge->Clear(olc::BLANK);
 
 		//std::cout << "Number of instances: " << Entity::entities.size() << "                                     \r";
 
 		mainloop(delta);
 
-		for(std::shared_ptr<Entity> e : Entity::entities) {
-			if(!e) continue;
-
-			e->update(delta);
+		for(AIController* cont : controllers){
+			if(cont != nullptr) cont->lua["loop"](delta);
 		}
 
-		for(std::shared_ptr<Entity> e : Entity::entities) {
+		for(std::shared_ptr<Entity> e : Entity::entities){
 			if(!e) continue;
 
 			e->draw();
@@ -100,21 +126,12 @@ namespace MainApplication {
 
 		DebugPoint::DrawPoints(); // draw debug points
 
+		if(windowChanged) return false;
+
 		std::this_thread::sleep_for(std::chrono::milliseconds(2)); // keep system performance optimal
 
 		return true;
 	}
-
-	void Game::drawGrid() {
-		for(int x = 0; x < ScreenWidth(); x += 32){
-			DrawLine({x, 0}, {x, ScreenHeight()}, 0x0AFFFFFF);
-		}
-
-		for(int y = 0; y < ScreenHeight(); y += 32){
-			DrawLine({0, y}, {ScreenWidth(), y}, 0x0AFFFFFF);
-		}
-	}
-
 }
 
 

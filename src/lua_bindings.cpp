@@ -1,5 +1,4 @@
 #include "lua_bindings.h"
-#include "lua_unit.h"
 #include "lua_canvas.h"
 #include "lua_canvas_entity.h"
 #include "debug_point.h"
@@ -85,8 +84,8 @@ namespace LuaBindings {
         return Stringify(val); // begin recursion
     }
 
-    void InitGame(MainApplication::Game& pge) {
-        sol::state& lua = pge.lua;
+    void InitGame(MainApplication::Game& game) {
+        sol::state& lua = game.lua;
 
         lua["cout"] = [](sol::object value){
             std::cout << StringifyObject(value) << "\n";
@@ -124,7 +123,7 @@ namespace LuaBindings {
                         [&](CanvasProxy& c){ return c.canvas ? sol::make_object(lua, c.canvas->height) : sol::object(sol::nil); });
 
 
-        sol::usertype<CanvasEntityProxy> canvas_entity_type = lua.new_usertype<CanvasEntityProxy>("CanvasEntity", sol::constructors<CanvasEntityProxy(const CanvasProxy& cnv), CanvasEntityProxy(float x, float y, const CanvasProxy& cnv), CanvasEntityProxy(float x, float y), CanvasEntityProxy()>());
+        sol::usertype<CanvasEntityProxy> canvas_entity_type = lua.new_usertype<CanvasEntityProxy>("Entity", sol::constructors<CanvasEntityProxy(const CanvasProxy& cnv), CanvasEntityProxy(float x, float y, const CanvasProxy& cnv), CanvasEntityProxy(float x, float y), CanvasEntityProxy()>());
         canvas_entity_type["visible"] = sol::property(
                         [&](CanvasEntityProxy& c, bool b){ if(c.entity) c.entity->visible = b; },
                         [&](CanvasEntityProxy& c){ return c.entity ? sol::make_object(lua, c.entity->visible) : sol::object(sol::nil); });
@@ -134,8 +133,8 @@ namespace LuaBindings {
         canvas_entity_type["y"] = sol::property(
                         [&](CanvasEntityProxy& c, float y){ if(c.entity) c.entity->position.y = y; },
                         [&](CanvasEntityProxy& c){ return c.entity ? sol::make_object(lua, c.entity->position.y) : sol::object(sol::nil); });
-        canvas_entity_type["entity"] = sol::readonly_property(
-                        [&](CanvasEntityProxy& c){ return c.entity ? sol::make_object_userdata(lua, std::static_pointer_cast<Entity>(c.entity)) : sol::object(sol::nil); });
+        canvas_entity_type["id"] = sol::readonly_property(
+                        [&](CanvasEntityProxy& c){ return c.entity ? sol::make_object(lua, c.entity->getId() ) : sol::object(sol::nil); });
 
         canvas_entity_type["canvas"] = sol::property(
                         [&](CanvasEntityProxy& c, CanvasProxy& e){
@@ -145,8 +144,32 @@ namespace LuaBindings {
 
         // Bindings
 
-        lua["ScreenWidth"] = [&](){ return pge.ScreenWidth(); };
-        lua["ScreenHeight"] = [&](){ return pge.ScreenHeight(); };
+        lua["ScreenWidth"] = [&](){ return game.window->ScreenWidth(); };
+        lua["ScreenHeight"] = [&](){ return game.window->ScreenHeight(); };
+        lua["ScreenResize"] = [&](int w, int h){ game.window->SetScreenSize(w, h); };
+        
+        lua["WindowResize"] = [&](int w, int h){ game.SetWindowSize(w, h); };
+        lua["WindowFullscreen"] = [&](bool fullscreen){ game.SetWindowFullscreen(fullscreen); };
+        lua["WindowVsync"] = [&](bool vsync){ game.SetWindowVsync(vsync); };
+
+        lua["list_ai"] = [&](){
+            sol::table list = lua.create_table();
+
+            for(int i=0; i < game.controllers.size(); ++i){
+                AIController* cont = game.controllers[i];
+                list[i] = lua.create_table_with("name", cont->name, "controller", sol::make_object_userdata(lua, cont));
+            }
+            return list;
+        };
+
+        lua["find_entity"] = [&](size_t id) {
+            std::shared_ptr<CanvasEntity> e = std::dynamic_pointer_cast<CanvasEntity>(Entity::findEntity(id));
+            if(!e) return sol::object(sol::nil);
+
+            return sol::make_object(lua, CanvasEntityProxy(std::move(e)));
+        };
+
+        // Debug Point Bindings
 
         lua["add_debug_point"] = [&](float x, float y, uint32_t color){
             return DebugPoint::AddManagedPoint(x, y, 8, 8, color);
@@ -160,24 +183,8 @@ namespace LuaBindings {
             DebugPoint::MovePoint(id, x, y);
         };
 
-        lua["list_ai"] = [&](){
-            sol::table list = lua.create_table();
-
-            for(int i=0; i < pge.controllers.size(); ++i){
-                AIController* cont = pge.controllers[i];
-                list[i] = lua.create_table_with("name", cont->name, "controller", sol::make_object_userdata(lua, cont));
-            }
-            return list;
-        };
-
-        // Core Entity Bindings
-
-        lua["find_entity"] = [&](size_t id) {
-            std::shared_ptr<Entity> e = Entity::findEntity(id);
-            if(!e) return sol::object(sol::nil);
-
-            return sol::make_object_userdata(lua, e);
-        };
+        // Deprecated Bindings
+/*
 
         lua["move_entity"] = [&](sol::object entity, float x, float y) {
             std::shared_ptr<Entity> e = entity.as<std::shared_ptr<Entity>>();
@@ -224,7 +231,7 @@ namespace LuaBindings {
             return data.as<sol::object>();
         };
 
-        // Unit Bindings
+        // Old Unit Bindings
 
         lua["new_unit"] = [&](sol::object controller, float x, float y){
             AIController* cont = controller.as<AIController*>();
@@ -257,7 +264,7 @@ namespace LuaBindings {
 
             return lua.create_table_with("type", ii.type, "direction", ii.direction).as<sol::object>();
         };
-
+*/
         // Function Registers / Lua State Transfer
 
         lua["__registry"] = lua.create_table();
@@ -265,7 +272,7 @@ namespace LuaBindings {
         lua["register"] = [&](const std::string& name, sol::function callback) {
             lua["__registry"][name] = callback;
 
-            for(AIController* cont : pge.controllers){
+            for(AIController* cont : game.controllers){
     			sol::state& ai_lua = cont->lua;
 
                 ai_lua.set_function(name, [callback,&ai_lua,&lua](sol::object arg){
@@ -275,13 +282,13 @@ namespace LuaBindings {
         };
     }
 
-    void InitAI(AIController& controller, olc::PixelGameEngine& pge) {
+    void InitAI(AIController& controller, MainApplication::Game& game) {
         sol::state& lua = controller.lua;
 
         sol::usertype<olc::vf2d> vector_type = lua.new_usertype<olc::vf2d>("vector", sol::constructors<olc::vf2d(), olc::vf2d(float x, float y)>());
         vector_type["x"] = &olc::vf2d::x;
         vector_type["y"] = &olc::vf2d::y;
-
+        /*
         lua["move"] = [&](sol::object entity, const std::string& direction){
             std::shared_ptr<Entity> e = entity.as<std::shared_ptr<Entity>>();
             if(!e) return sol::object(sol::nil);
@@ -326,7 +333,7 @@ namespace LuaBindings {
 
             return data.as<sol::object>();
         };
-
+        */
     }
 
 }

@@ -24,6 +24,8 @@ public:
 struct CanvasEntityProxy {
     std::shared_ptr<CanvasEntity> entity;
 
+    CanvasEntityProxy(std::shared_ptr<CanvasEntity>&& entity); // reference constructor
+
     CanvasEntityProxy();
     CanvasEntityProxy(float x, float y);
     CanvasEntityProxy(const CanvasProxy& cnv);

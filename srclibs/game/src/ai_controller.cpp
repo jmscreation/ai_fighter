@@ -3,6 +3,7 @@
 AIController::AIController(const std::string& str): _name(str), script(_script), name(_name) {
     lua.open_libraries(sol::lib::base);
 	lua.open_libraries(sol::lib::math);
+	lua.open_libraries(sol::lib::string);
 }
 
 AIController::~AIController() {

@@ -28,7 +28,6 @@ public:
     inline size_t getId() { return id; }
 
     virtual void draw();
-    virtual void update(float delta);
 
     size_t checkCollision(std::vector<std::weak_ptr<Entity>>& list);
 
