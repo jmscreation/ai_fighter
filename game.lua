@@ -11,8 +11,10 @@ end
 
 
 -- Main Game Setup Function
+local t = Entity.new(Canvas.new(48,48,0xFFF00FFF));
 function setup()
-    local t = Entity.new(48, 48, Canvas.new(48,48,0xFFF00FFF));
+    t.x = 48;
+    t.y = 48;
     print("Initialize...\n");
 
     --ScreenWidth(); -- get screen width
@@ -32,9 +34,11 @@ end
 local clock = 0;
 function loop(delta)
     game_timer = game_timer + delta;
-
+    t.x = t.x + delta * (64 * math.random() - 32);
+    t.y = t.y + delta * (64 * math.random() - 32);
+    
     if game_timer - clock > 1 then
-        Entity.new(math.random() * ScreenWidth(), math.random() * ScreenHeight(), Canvas.new(48,48,0xFFF00FFF));
+        t = Entity.new(math.random() * ScreenWidth(), math.random() * ScreenHeight(), Canvas.new(48,48,0xFFF00FFF));
         clock = game_timer;
     end
 end

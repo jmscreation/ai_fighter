@@ -167,14 +167,14 @@ namespace LuaBindings {
             }
             return list;
         };
-/*
+
         lua["find_entity"] = [&](size_t id) {
             std::shared_ptr<CanvasEntity> e = std::dynamic_pointer_cast<CanvasEntity>(Entity::findEntity(id));
             if(!e) return sol::object(sol::nil);
 
             return sol::make_object(lua, CanvasEntityProxy(std::move(e)));
         };
-*/
+
         // Debug Point Bindings
 
         lua["add_debug_point"] = [&](float x, float y, uint32_t color){

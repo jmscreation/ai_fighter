@@ -99,6 +99,7 @@ namespace MainApplication {
 	}
 
 	bool Game::OnUserUpdate(Window* pge, float delta) {
+		lua.collect_gc();
 		if(entRefreshTimer.getSeconds() > 30){
 			Entity::optimizeEntities(); // clear out invalid entities
 			entRefreshTimer.restart();
@@ -111,7 +112,9 @@ namespace MainApplication {
 		mainloop(delta);
 
 		for(AIController* cont : controllers){
-			if(cont != nullptr) cont->lua["loop"](delta);
+			if(cont == nullptr) continue;
+			cont->lua["loop"](delta);
+			cont->lua.collect_gc();
 		}
 
 		for(std::shared_ptr<Entity> e : Entity::entities){

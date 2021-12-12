@@ -36,10 +36,10 @@ void CanvasEntity::draw() {
 // Lua Proxy For CanvasEntity
 
 // Reference Constructor
-/*
+
 CanvasEntityProxy::CanvasEntityProxy(std::shared_ptr<CanvasEntity>&& entity): entity(std::move(entity)) {
 }
-*/
+
 
 CanvasEntityProxy::CanvasEntityProxy() {
     entity = CanvasEntity::create_entity();
