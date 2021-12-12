@@ -21,6 +21,7 @@ namespace MainApplication {
 		this->vsync = vsync;
 		this->fullscreen = fullscreen;
 		windowChanged = true;
+		gameStartup = true;
 
 		lua.open_libraries(sol::lib::base);
 		lua.open_libraries(sol::lib::math);
@@ -58,12 +59,6 @@ namespace MainApplication {
 		}
 
 		// Main lua environment has now loaded
-
-		mainsetup(); // run game setup
-
-		for(AIController* cont : controllers){
-			cont->lua["setup"](); // run ai setup
-		}
 		
 		while(OpenWindow());
 	}
@@ -79,6 +74,7 @@ namespace MainApplication {
 		if(!windowChanged) return false;
 		windowChanged = false;
 		window = new Window(std::bind(&Game::OnUserUpdate, this, std::placeholders::_1, std::placeholders::_2),
+							std::bind(&Game::OnUserCreate, this, std::placeholders::_1),
 							screen_w, screen_h, px, py, fullscreen, vsync);
 		delete window;
 		window = nullptr;
@@ -129,6 +125,19 @@ namespace MainApplication {
 		if(windowChanged) return false;
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(2)); // keep system performance optimal
+
+		return true;
+	}
+
+	bool Game::OnUserCreate(Window* pge) {
+		if(gameStartup){ // don't run this setup function more than once
+			gameStartup = false;
+			mainsetup(); // run game setup
+
+			for(AIController* cont : controllers){
+				cont->lua["setup"](); // run ai setup
+			}
+		}
 
 		return true;
 	}

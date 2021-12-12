@@ -11,10 +11,11 @@
 
 namespace MainApplication {
     class Game {
+		bool windowChanged, gameStartup;
+	public:
 		uint32_t screen_w, screen_h, px, py;
 		bool vsync, fullscreen;
-		bool windowChanged;
-	public:
+
 		Window* window;
 
 		Game(uint32_t w, uint32_t h, uint32_t px = 1, uint32_t py = 1);
@@ -27,6 +28,7 @@ namespace MainApplication {
 		void SetWindowVsync(bool vSync);
 
 		bool OnUserUpdate(Window* pge, float delta);
+		bool OnUserCreate(Window* pge);
 
 	public:
 		static sol::state* _lua;

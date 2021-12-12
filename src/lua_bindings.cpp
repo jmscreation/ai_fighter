@@ -144,10 +144,16 @@ namespace LuaBindings {
 
         // Bindings
 
-        lua["ScreenWidth"] = [&](){ return game.window->ScreenWidth(); };
-        lua["ScreenHeight"] = [&](){ return game.window->ScreenHeight(); };
-        lua["ScreenResize"] = [&](int w, int h){ game.window->SetScreenSize(w, h); };
-        
+        lua["ScreenWidth"] = [&game](){ return game.window != nullptr ? game.window->ScreenWidth() : game.screen_w; };
+        lua["ScreenHeight"] = [&game](){ return game.window != nullptr ? game.window->ScreenHeight() : game.screen_h; };
+        lua["ScreenResize"] = [&game](int w, int h){
+            if(game.window != nullptr){
+                game.window->SetScreenSize(w, h);
+            } else {
+                game.screen_w = w; game.screen_h = h;
+            }
+        };
+
         lua["WindowResize"] = [&](int w, int h){ game.SetWindowSize(w, h); };
         lua["WindowFullscreen"] = [&](bool fullscreen){ game.SetWindowFullscreen(fullscreen); };
         lua["WindowVsync"] = [&](bool vsync){ game.SetWindowVsync(vsync); };
@@ -161,14 +167,14 @@ namespace LuaBindings {
             }
             return list;
         };
-
+/*
         lua["find_entity"] = [&](size_t id) {
             std::shared_ptr<CanvasEntity> e = std::dynamic_pointer_cast<CanvasEntity>(Entity::findEntity(id));
             if(!e) return sol::object(sol::nil);
 
             return sol::make_object(lua, CanvasEntityProxy(std::move(e)));
         };
-
+*/
         // Debug Point Bindings
 
         lua["add_debug_point"] = [&](float x, float y, uint32_t color){
