@@ -3,41 +3,93 @@
 #include "lua_canvas.h"
 #include "lua_canvas_entity.h"
 #include "debug_point.h"
+#include <map>
+#include <set>
 
 namespace LuaBindings {
 
-    std::string StringType(sol::object obj) {
-        switch(obj.get_type()){
-            case sol::type::string: return obj.as<std::string>();
-            case sol::type::number: return std::to_string(obj.as<float>());
-            case sol::type::boolean: return obj.as<bool>() ? "true" : "false";
-            case sol::type::function: return "function";
-            case sol::type::userdata: case sol::type::lightuserdata: return obj.valid() ? "data" : "unknown";
-            case sol::type::none: case sol::type::nil: return "nil";
-            case sol::type::table : return "table";
-        }
+    sol::object CopyObject(sol::object val, sol::state& lua) {
+        std::map<const void*, sol::table> tableMap;
+        std::function<sol::object(sol::object)> Copy = [&](sol::object value) -> sol::object {            
 
-        return "unknown";
+            switch(value.get_type()){
+                case sol::type::boolean: return sol::make_object(lua, value.as<bool>());
+                case sol::type::string: return sol::make_object(lua, value.as<std::string>());
+                case sol::type::number:{
+                    double val = value.as<double>();
+                    return fmod(val, 1.0f) == 0.0f ? sol::make_object(lua, int64_t(val)) : sol::make_object(lua, val);
+                }
+                case sol::type::table:{
+                    if(tableMap.count(value.pointer())){
+                        return tableMap[value.pointer()].as<sol::object>();
+                    }
+                    sol::table copy = lua.create_table();
+                    tableMap.insert_or_assign(value.pointer(), copy);
+
+                    sol::table table = value.as<sol::table>();
+                    for(auto it = table.begin(); it != table.end(); ++it){
+                        copy[Copy((*it).first)] = Copy((*it).second);
+                    }
+
+                    return copy.as<sol::object>();
+                }
+                default: return sol::object(sol::nil);
+            }
+        };
+
+        return Copy(val); // begin recursion
     }
 
-    std::string StringifyTable(sol::table table, int level=0) {
-        std::string str = "{\n";
-        table.for_each([&](sol::object key, sol::object value){
-            str += std::string(level, '\t') + StringType(key) + " -> " + (value.get_type() == sol::type::table ? StringifyTable(value.as<sol::table>(), level + 1) : StringType(value)) + "\n";
-        });
-        str += "}\n";
-        return str;
+    std::string StringifyObject(sol::object val) {
+        std::set<const void*> tableMap;
+        std::function<std::string(sol::object)> Stringify = [&](sol::object value) -> std::string {
+
+            switch(value.get_type()){
+                case sol::type::userdata: return "<userdata>";
+                case sol::type::boolean: return std::to_string(value.as<bool>());
+                case sol::type::string: return value.as<std::string>();
+                case sol::type::function: return "<function>";
+                case sol::type::number:{
+                    double val = value.as<double>();
+                    return fmod(val, 1.0f) == 0.0f ? std::to_string(int64_t(val)) : std::to_string(val);
+                }
+                case sol::type::table:{
+                    if(tableMap.count(value.pointer())){
+                        return "...";
+                    }
+                    tableMap.emplace(value.pointer());
+                    std::string copy = "{ ";
+                    sol::table table = value.as<sol::table>();
+                    for(auto it = table.begin(); it != table.end(); ++it){
+                        std::pair<std::string, std::string> fix, fix2;
+                        if((*it).first.get_type() == sol::type::table){
+                             fix.first = "[";
+                             fix.second = "]";
+                        }
+                        if((*it).second.get_type() == sol::type::string){
+                             fix2.first = "\"";
+                             fix2.second = "\"";
+                        }
+                        copy += (it != table.begin() ? ", " : "")
+                            + fix.first + Stringify((*it).first) + fix.second + " = "
+                            + fix2.first + Stringify((*it).second) + fix2.second;
+                    }
+                    copy += "}";
+
+                    return copy;
+                }
+                default: return "nil";
+            }
+        };
+
+        return Stringify(val); // begin recursion
     }
 
     void InitGame(MainApplication::Game& pge) {
         sol::state& lua = pge.lua;
 
         lua["cout"] = [](sol::object value){
-            if(value.get_type() == sol::type::table){
-                std::cout << StringifyTable(value.as<sol::table>());
-            } else {
-                std::cout << StringType(value) << "\n";
-            }
+            std::cout << StringifyObject(value) << "\n";
         };
         
         // User Types
@@ -205,6 +257,22 @@ namespace LuaBindings {
 
             return lua.create_table_with("type", ii.type, "direction", ii.direction).as<sol::object>();
         };
+
+        // Function Registers / Lua State Transfer
+
+        lua["__registry"] = lua.create_table();
+
+        lua["register"] = [&](const std::string& name, sol::function callback) {
+            lua["__registry"][name] = callback;
+
+            for(AIController* cont : pge.controllers){
+    			sol::state& ai_lua = cont->lua;
+
+                ai_lua.set_function(name, [callback,&ai_lua,&lua](sol::object arg){
+                    return CopyObject(callback(CopyObject(arg, lua)), ai_lua);
+                });
+            }
+        };
     }
 
     void InitAI(AIController& controller, olc::PixelGameEngine& pge) {
@@ -258,7 +326,7 @@ namespace LuaBindings {
 
             return data.as<sol::object>();
         };
-        
+
     }
 
 }

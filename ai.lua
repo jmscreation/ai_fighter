@@ -44,3 +44,15 @@ function unit_loop(self, delta)
     end
     
 end
+
+
+
+function setup()
+    local retval = {foo = "bar", [{something = {1,2,3, {"a", x=(function()end),"b", "c"}}}] = "wow"};
+    retval.other = retval;
+    local x = foo(retval);
+
+    print( foo({1,2,3, "test"}) );
+    print( foo("testing") );
+    print( foo() );
+end

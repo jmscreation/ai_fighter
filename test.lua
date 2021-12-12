@@ -130,6 +130,22 @@ closure = nil;
 function setup()
     print("Initialize...\n");
 
+    register("foo", (
+        function(o)
+            if type(o) == "string" then print(o); return; end;
+            if not o then return 0; end
+            r = 0;
+            for k,v in pairs(o) do
+                if type(v) == "number" then
+                    r = r + v;
+                end
+            end
+            return o;
+        end
+    ) );
+
+    cout(setup);
+
     local canvas = Canvas.new(128, 128, 0xFFFFFFFF);
     canvas:fill(0xFFFF0000, 32, 32);
     canvas:fill(0xFF00FF00, 32, 32, 64, 32);

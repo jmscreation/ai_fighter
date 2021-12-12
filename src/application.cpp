@@ -17,6 +17,8 @@ namespace MainApplication {
 
 		lua.open_libraries(sol::lib::base);
 		lua.open_libraries(sol::lib::math);
+		lua.open_libraries(sol::lib::package);
+		lua.open_libraries(sol::lib::string);
 		
 		if(Construct(w, h, px, py)){
 			Start();
@@ -61,7 +63,11 @@ namespace MainApplication {
 
 		// Main lua environment has now loaded
 
-		mainsetup();
+		mainsetup(); // run game setup
+
+		for(AIController* cont : controllers){
+			cont->lua["setup"](); // run ai setup
+		}
 
 		return true;
 	};
