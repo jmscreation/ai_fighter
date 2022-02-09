@@ -24,7 +24,7 @@ set ASYNC_BUILD=1
 :: Configure Source For Compiling And Additional Custom Library Directories / Names
 set SOURCE_DIRECTORIES=src
 set INCLUDE_DIRECTORIES=include
-set LIBRARY_DIRECTORIES=srclibs\lua srclibs\pge srclibs\game
+set LIBRARY_DIRECTORIES=libraries\liblua-main srclibs\pge srclibs\game
 set LIBRARY_NAMES=lua64 setupapi comdlg32 user32 gdi32 gdiplus opengl32 Shlwapi dwmapi stdc++fs
 
 :: Custom Library Support Directory Names
