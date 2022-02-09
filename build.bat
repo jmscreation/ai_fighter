@@ -160,12 +160,12 @@ goto loop
 :compile_function
 	set OBJ_DIR=%1\%OBJECT_DIRECTORY%
 	for /R %1 %%F in (*.%2) do (
-		if not exist !OBJ_DIR!\%%~nF!n!.o (
-			echo Building %%~nF!n!.o
-			start /B %WAIT% "%%~nF!n!.o" %3 %ADDITIONAL_INCLUDEDIRS% %~4 %DEBUG_INFO% -c %%F -o !OBJ_DIR!\%%~nF!n!.o
+		if not exist !OBJ_DIR!\%~n3_%%~nF.o (
+			echo Building %~n3_%%~nF.o
+			start /B %WAIT% "%%~nF.o" %3 %ADDITIONAL_INCLUDEDIRS% %~4 %DEBUG_INFO% -c %%F -o !OBJ_DIR!\%~n3_%%~nF.o
 
 			if %VERBOSE% GTR 0 (
-				echo %3 %ADDITIONAL_INCLUDEDIRS% %~4 %DEBUG_INFO% -c %%F -o !OBJ_DIR!\%%~nF!n!.o
+				echo %3 %ADDITIONAL_INCLUDEDIRS% %~4 %DEBUG_INFO% -c %%F -o !OBJ_DIR!\%~n3_%%~nF.o
 			)
 		)
 	)

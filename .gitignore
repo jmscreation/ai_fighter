@@ -31,4 +31,6 @@
 *.app
 *.elf
 
-.vscode/*
+#Other
+.vscode
+libraries
